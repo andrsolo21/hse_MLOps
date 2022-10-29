@@ -1,12 +1,11 @@
 from fastapi import FastAPI, UploadFile, File
-from ml_models import ML_MODELS, get_models_list, MLModel
-from enum_models import *
+from ml_models import ML_MODELS, get_models_list, MLModel, convert_uploaded_file
+# from enum_models import *
 from api_models import *
-import pandas as pd
+# import pandas as pd
 
 app = FastAPI()
-
-# uvicorn main: app - -reload
+# uvicorn main:app --reload
 
 
 @app.get("/available_model_types")
@@ -20,7 +19,7 @@ async def root():
     return {"models_list": models_list}
 
 
-@app.post("/create/{model_type}")
+@app.post("/models/{model_type}/create")
 async def root(model_type: ModelType,
                model_params: RLParams | DTCParams | DTRParams | None = None
                ):
@@ -34,15 +33,35 @@ async def root(model_type: ModelType,
     return {"model_path": model_path}
 
 
-@app.post("/fit/{model_name}")
+@app.post("/models/{model_name}/fit")
 async def root(model_name: str,
                uploaded_file: UploadFile = File(description="A file read as UploadFile")
                ):
-    # contents = await uploaded_file.read()
-    if uploaded_file.filename.split(".")[-1] == "xlsx" or uploaded_file.filename.split(".")[-1] == "xls":
-        data = pd.read_csv(uploaded_file.file)
-    elif uploaded_file.filename.split(".")[-1] == "csv":
-        data = pd.read_csv(uploaded_file.file)
-    # else:
-    #     return TODO: return error code wrong format
-    return {"column": list(data.columns)[0]}
+
+    data = convert_uploaded_file(uploaded_file)
+    ml_model = MLModel(model_name=model_name)
+    ml_model.fit(data)
+    ml_model.dump_model()
+    return {"is_fitted": ml_model.is_fitted}
+
+
+@app.post("/models/{model_name}/predict")
+async def root(model_name: str,
+               uploaded_file: UploadFile = File(description="A file read as UploadFile")
+               ):
+    data = convert_uploaded_file(uploaded_file)
+    ml_model = MLModel(model_name=model_name)
+    result = ml_model.predict(data)
+    return {"predict": list(result)}
+
+
+@app.get("/models/{model_name}/info")
+async def root(model_name: str):
+    ml_model = MLModel(model_name=model_name)
+    return ml_model.get_info()
+
+
+@app.delete("/models/{model_name}/delete")
+async def root(model_name: str):
+    ml_model = MLModel(model_name=model_name)
+    return ml_model.delete_model()
