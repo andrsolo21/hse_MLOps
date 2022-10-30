@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.grpc.examples.helloworld";
+option java_outer_classname = "HelloWorldProto";
+option objc_class_prefix = "HLW";
+
+
+package helloworld;
+
+//python -m grpc_tools.protoc -I./grpc --python_out=. --grpc_python_out=. ./grpc/messages.proto
+
+// The greeting service definition.
+// The greeting service definition.
+service Greeter {
+
+  rpc GetAvailableModelTypes (HelloRequest) returns (AvailableModelTypes) {}
+
+  rpc GetMLModelsList (HelloRequest) returns (MLModelsList) {}
+
+  rpc CreateModel (CreateModelRequest) returns (ResponseCreatedModel){}
+}
+
+message HelloRequest {
+  string name = 1;
+}
+
+message AvailableModelTypes {
+  repeated string available_model_types = 1;
+}
+
+message MLModelsList {
+  repeated string ml_models_list = 1;
+}
+
+message CreateModelRequest {
+  string model_type = 1;
+  float alpha = 2;
+  bool fit_intercept = 3;
+  bool normalize = 4;
+  int32 max_iter = 5;
+  int32 random_state = 6;
+  string splitter = 7;
+  int32 max_depth = 8;
+  int32 min_samples_split = 9;
+  int32 min_samples_leaf = 10;
+  float min_weight_fraction_leaf = 11;
+  string criterion = 12;
+}
+
+message ResponseCreatedModel {
+  string path = 1;
+  string model_type = 2;
+}

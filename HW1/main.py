@@ -52,22 +52,22 @@ async def create_model(model_type: ModelType,
     :return: CreateModelRespond
     """
 
-    with grpc.insecure_channel('localhost:50051') as channel:
-        stub = messages_pb2_grpc.GreeterStub(channel)
-        params = model_params.dict()
-        params["model_type"] = model_type
-        response = stub.CreateModel(messages_pb2.CreateModelRequest(**params))
-
-    # model_params = reformat_model_params(model_params, model_type)
-    # print(model_params)
-    # if model_params is None:
-    #     params = {}
-    # else:
+    # with grpc.insecure_channel('localhost:50051') as channel:
+    #     stub = messages_pb2_grpc.GreeterStub(channel)
     #     params = model_params.dict()
-    #
-    # ml_model = MLModel(type_model=model_type, params=params)
-    # model_path = ml_model.dump_model()
-    return CreateModelRespond(path=response.model_path, model_type=response.model_type)
+    #     params["model_type"] = model_type
+    #     response = stub.CreateModel(messages_pb2.CreateModelRequest(**params))
+    # return CreateModelRespond(path=response.model_path, model_type=response.model_type)
+    model_params = reformat_model_params(model_params, model_type)
+    print(model_params)
+    if model_params is None:
+        params = {}
+    else:
+        params = model_params.dict()
+
+    ml_model = MLModel(type_model=model_type, params=params)
+    model_path = ml_model.dump_model()
+    return CreateModelRespond(path=model_path, model_type=model_type)
 
 
 @app.post("/models/{model_name}/fit/",
