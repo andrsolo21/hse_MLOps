@@ -10,8 +10,9 @@ import messages_pb2_grpc
 
 app = FastAPI()
 
-# Start server:
+# Start servers:
 # uvicorn main:app --reload
+# python server_grpc.py
 
 
 @app.get("/available_model_types/", response_model=AvailableModelTypeRespond)
