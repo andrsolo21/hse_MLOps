@@ -13,8 +13,8 @@ class ONEClassParams(BaseModel):
     random_state: int | None = 42
     splitter: SplitterType | None = SplitterType.best
     max_depth: int | None = 8
-    min_samples_split: int | float = 2
-    min_samples_leaf: int | float = 1
+    min_samples_split: int = 2
+    min_samples_leaf: int = 1
     min_weight_fraction_leaf: float = 0
     criterion: OneCriterionType | None = OneCriterionType.gini
 
@@ -37,8 +37,8 @@ class DTCParams(BaseModel):
     criterion: ClassificationCriterionType | None = ClassificationCriterionType.gini
     splitter: SplitterType | None = SplitterType.best
     max_depth: int | None = 8
-    min_samples_split: int | float = 2
-    min_samples_leaf: int | float = 1
+    min_samples_split: int | None = 2
+    min_samples_leaf: int | None = 1
     min_weight_fraction_leaf: float = 0
     random_state: int | None = 42
 
@@ -50,8 +50,8 @@ class DTRParams(BaseModel):
     criterion: RegressionCriterionType | None = RegressionCriterionType.squared_error
     splitter: SplitterType | None = SplitterType.best
     max_depth: int | None = 8
-    min_samples_split: int | float | None = 2
-    min_samples_leaf: int | float | None = 1
+    min_samples_split: int | None = 2
+    min_samples_leaf: int | None = 1
     min_weight_fraction_leaf: float | None = 0
     random_state: int | None = 59
 

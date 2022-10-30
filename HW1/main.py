@@ -1,7 +1,12 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from ml_models import ML_MODELS, get_ml_models_list, MLModel
+from ml_models import get_ml_models_list, MLModel
 from api_models import *
 import pandas as pd
+
+import grpc
+import messages_pb2
+import messages_pb2_grpc
+
 
 app = FastAPI()
 
@@ -15,7 +20,10 @@ async def get_available_model_types():
     Get available model types
     :return: AvailableModelTypeRespond
     """
-    return AvailableModelTypeRespond(available_model_types=list(ML_MODELS.keys()))
+    with grpc.insecure_channel('localhost:50051') as channel:
+        stub = messages_pb2_grpc.GreeterStub(channel)
+        response = stub.GetAvailableModelTypes(messages_pb2.HelloRequest(name='1'))
+    return AvailableModelTypeRespond(available_model_types=list(response.available_model_types))
 
 
 @app.get("/models_list/", response_model=ModelsListRespond)
@@ -24,8 +32,10 @@ async def get_models_list():
     Get list of created models
     :return: ModelsListRespond
     """
-    models_list, _ = get_ml_models_list()
-    return ModelsListRespond(models_list=list(models_list))
+    with grpc.insecure_channel('localhost:50051') as channel:
+        stub = messages_pb2_grpc.GreeterStub(channel)
+        response = stub.GetMLModelsList(messages_pb2.HelloRequest(name='1'))
+    return ModelsListRespond(models_list=list(response.ml_models_list))
 
 
 @app.post("/models/{model_type}/create/",
@@ -41,17 +51,23 @@ async def create_model(model_type: ModelType,
     :param model_params: parameters for creating data
     :return: CreateModelRespond
     """
-    model_params = reformat_model_params(model_params, model_type)
 
-    print(model_params)
-    if model_params is None:
-        params = {}
-    else:
+    with grpc.insecure_channel('localhost:50051') as channel:
+        stub = messages_pb2_grpc.GreeterStub(channel)
         params = model_params.dict()
+        params["model_type"] = model_type
+        response = stub.CreateModel(messages_pb2.CreateModelRequest(**params))
 
-    ml_model = MLModel(type_model=model_type, params=params)
-    model_path = ml_model.dump_model()
-    return CreateModelRespond(path=model_path, model_params=model_params, model_type=model_type)
+    # model_params = reformat_model_params(model_params, model_type)
+    # print(model_params)
+    # if model_params is None:
+    #     params = {}
+    # else:
+    #     params = model_params.dict()
+    #
+    # ml_model = MLModel(type_model=model_type, params=params)
+    # model_path = ml_model.dump_model()
+    return CreateModelRespond(path=response.model_path, model_type=response.model_type)
 
 
 @app.post("/models/{model_name}/fit/",
@@ -126,7 +142,7 @@ async def delete_model(model_name: str):
 def convert_uploaded_file(uploaded_file: UploadFile) -> pd.DataFrame:
     """
     Check and convert uploaded file
-    :param uploaded_file:
+    :param uploaded_file: uploaded_file
     :return: uploaded dataset
     :raise: HTTPException - "Invalid file type"
     """
