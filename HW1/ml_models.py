@@ -9,14 +9,14 @@ import os
 MODELS_PATH = "models_dir"
 
 ML_MODELS = {
-    "Ridge": Ridge,
-    "Lasso": Lasso,
-    "DecisionTreeClassifier": DecisionTreeClassifier,
-    "DecisionTreeRegressor": DecisionTreeRegressor
+    ModelType.R: Ridge,
+    ModelType.L: Lasso,
+    ModelType.DTC: DecisionTreeClassifier,
+    ModelType.DTR: DecisionTreeRegressor
 }
 
 
-def get_models_list() -> (list[str], dict[str, list[str]]):
+def get_ml_models_list() -> (list[str], dict[str, list[str]]):
     """
     Get name of models from disk
     :return:
@@ -89,7 +89,7 @@ class MLModel(object):
         :return: None
         """
         self.model = ML_MODELS[self.type_model](**self.params)
-        _, models_dct = get_models_list()
+        _, models_dct = get_ml_models_list()
         num_model = max(models_dct[self.type_model]) + 1 if len(models_dct[self.type_model]) > 0 else 0
         self.model_name = f"{self.type_model}_{num_model}"
 
@@ -176,8 +176,8 @@ class MLModel(object):
             "type_model": self.type_model,
             "is_trained": self.is_trained,
             "train_columns": self.train_columns,
-            "target_column" : self.target_column,
-            "model_params": self.params,
+            "target_column": self.target_column,
+            # "model_params": self.params,
         }
 
     def delete_model(self):
