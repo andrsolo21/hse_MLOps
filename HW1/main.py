@@ -1,18 +1,18 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from ml_models import get_ml_models_list, MLModel
 from api_models import *
-import pandas as pd
+import json
 
 import grpc
 import messages_pb2
 import messages_pb2_grpc
-
 
 app = FastAPI()
 
 # Start servers:
 # uvicorn main:app --reload
 # python server_grpc.py
+
+GRPC_SERVER = 'localhost:50051'
 
 
 @app.get("/available_model_types/", response_model=AvailableModelTypeRespond)
@@ -21,7 +21,7 @@ async def get_available_model_types():
     Get available model types
     :return: AvailableModelTypeRespond
     """
-    with grpc.insecure_channel('localhost:50051') as channel:
+    with grpc.insecure_channel(GRPC_SERVER) as channel:
         stub = messages_pb2_grpc.GreeterStub(channel)
         response = stub.GetAvailableModelTypes(messages_pb2.HelloRequest(name='1'))
     return AvailableModelTypeRespond(available_model_types=list(response.available_model_types))
@@ -33,7 +33,7 @@ async def get_models_list():
     Get list of created models
     :return: ModelsListRespond
     """
-    with grpc.insecure_channel('localhost:50051') as channel:
+    with grpc.insecure_channel(GRPC_SERVER) as channel:
         stub = messages_pb2_grpc.GreeterStub(channel)
         response = stub.GetMLModelsList(messages_pb2.HelloRequest(name='1'))
     return ModelsListRespond(models_list=list(response.ml_models_list))
@@ -53,22 +53,22 @@ async def create_model(model_type: ModelType,
     :return: CreateModelRespond
     """
 
-    # with grpc.insecure_channel('localhost:50051') as channel:
-    #     stub = messages_pb2_grpc.GreeterStub(channel)
-    #     params = model_params.dict()
-    #     params["model_type"] = model_type
-    #     response = stub.CreateModel(messages_pb2.CreateModelRequest(**params))
-    # return CreateModelRespond(path=response.model_path, model_type=response.model_type)
-    model_params = reformat_model_params(model_params, model_type)
-    print(model_params)
-    if model_params is None:
-        params = {}
-    else:
-        params = model_params.dict()
+    with grpc.insecure_channel(GRPC_SERVER) as channel:
+        stub = messages_pb2_grpc.GreeterStub(channel)
+        params = json.dumps(model_params.dict())
+        response = stub.CreateModel(messages_pb2.CreateModelRequest_2(model_type=model_type, model_params=params))
+    return CreateModelRespond(path=response.model_path, model_type=response.model_type)
 
-    ml_model = MLModel(type_model=model_type, params=params)
-    model_path = ml_model.dump_model()
-    return CreateModelRespond(path=model_path, model_type=model_type)
+    # model_params = reformat_model_params(model_params, model_type)
+    # print(model_params)
+    # if model_params is None:
+    #     params = {}
+    # else:
+    #     params = model_params.dict()
+    #
+    # ml_model = MLModel(type_model=model_type, params=params)
+    # model_path = ml_model.dump_model()
+    # return CreateModelRespond(path=model_path, model_type=model_type)
 
 
 @app.post("/models/{model_name}/fit/",
@@ -85,11 +85,16 @@ async def fit_model(model_name: str,
     :param uploaded_file: dataset for train
     :return: FitModelRespond
     """
-    data = convert_uploaded_file(uploaded_file)
-    ml_model = MLModel(model_name=model_name)
-    ml_model.fit(data, target_column)
-    ml_model.dump_model()
-    return FitModelRespond(is_trained=ml_model.is_trained)
+    with grpc.insecure_channel(GRPC_SERVER) as channel:
+        stub = messages_pb2_grpc.GreeterStub(channel)
+        response = stub.FitModel(send_file_by_grpc(uploaded_file=uploaded_file,
+                                                   model_name=model_name,
+                                                   target_column=target_column,
+                                                   chunk_size=1024))
+        if response.error_code == 0:
+            return FitModelRespond(is_trained=response.is_trained)
+        else:
+            raise HTTPException(status_code=response.error_code, detail=response.error_message)
 
 
 @app.post("/models/{model_name}/predict/",
@@ -107,10 +112,20 @@ async def get_predictions(model_name: str,
     :param uploaded_file: Dataset for predicting data
     :return: PredictModelRespond
     """
-    data = convert_uploaded_file(uploaded_file)
-    ml_model = MLModel(model_name=model_name)
-    result = ml_model.predict(data)
-    return PredictModelRespond(predict=list(result))
+    with grpc.insecure_channel(GRPC_SERVER) as channel:
+        stub = messages_pb2_grpc.GreeterStub(channel)
+        response = stub.PredictData(send_file_by_grpc(uploaded_file=uploaded_file,
+                                                      model_name=model_name,
+                                                      chunk_size=1024))
+        if response.error_code == 0:
+            return PredictModelRespond(predict=list(response.predict))
+        else:
+            raise HTTPException(status_code=response.error_code, detail=response.error_message)
+
+    # data = convert_uploaded_file(uploaded_file)
+    # ml_model = MLModel(model_name=model_name)
+    # result = ml_model.predict(data)
+    # return PredictModelRespond(predict=list(result))
 
 
 @app.get("/models/{model_name}/info/",
@@ -122,9 +137,16 @@ async def get_model_info(model_name: str):
     :param model_name: Identifying model name
     :return: basic info about model GetInfoRespond
     """
-    ml_model = MLModel(model_name=model_name)
-    data = ml_model.get_info()
-    return GetInfoRespond(**data)
+    with grpc.insecure_channel(GRPC_SERVER) as channel:
+        stub = messages_pb2_grpc.GreeterStub(channel)
+        response = stub.GetModelInfo(messages_pb2.ModelName(model_name=model_name))
+        if response.error_code == 0:
+            return GetInfoRespond(**json.loads(response.model_params))
+        else:
+            raise HTTPException(status_code=response.error_code, detail=response.error_message)
+    # ml_model = MLModel(model_name=model_name)
+    # data = ml_model.get_info()
+    # return GetInfoRespond(**data)
 
 
 @app.delete("/models/{model_name}/delete/")
@@ -134,23 +156,39 @@ async def delete_model(model_name: str):
     :param model_name: Identifying model name
     :return: ModelsListRespond
     """
-    ml_model = MLModel(model_name=model_name)
-    ml_model.delete_model()
-    models_list, _ = get_ml_models_list()
-    return ModelsListRespond(models_list=list(models_list))
+    with grpc.insecure_channel(GRPC_SERVER) as channel:
+        stub = messages_pb2_grpc.GreeterStub(channel)
+        response = stub.DeleteModel(messages_pb2.ModelName(model_name=model_name))
+        if response.error_code == 0:
+            return ModelsListRespond(models_list=list(response.ml_models_list))
+        else:
+            raise HTTPException(status_code=response.error_code, detail=response.error_message)
+    # ml_model = MLModel(model_name=model_name)
+    # ml_model.delete_model()
+    # models_list, _ = get_ml_models_list()
+    # return ModelsListRespond(models_list=list(models_list))
 
 
-def convert_uploaded_file(uploaded_file: UploadFile) -> pd.DataFrame:
+def send_file_by_grpc(uploaded_file: UploadFile, model_name: str, target_column: str = None, chunk_size: int = 1024):
     """
-    Check and convert uploaded file
-    :param uploaded_file: uploaded_file
-    :return: uploaded dataset
-    :raise: HTTPException - "Invalid file type"
+    Streaming file by grpc
+    :param uploaded_file: uploaded file for streaming
+    :param model_name: model name
+    :param target_column: target column
+    :param chunk_size: chunk size
+    :return: stream of data
     """
-    if uploaded_file.filename.split(".")[-1] == "xlsx" or uploaded_file.filename.split(".")[-1] == "xls":
-        data = pd.read_csv(uploaded_file.file)
-    elif uploaded_file.filename.split(".")[-1] == "csv":
-        data = pd.read_csv(uploaded_file.file)
+    extension = uploaded_file.filename.split(".")[-1]
+    if target_column is None:
+        metadata = messages_pb2.PredictMetaData(extension=extension, model_name=model_name)
+        yield messages_pb2.SendFile(predict_metadata=metadata)
     else:
-        raise HTTPException(status_code=415, detail="Invalid file type")
-    return data
+        metadata = messages_pb2.FitMetaData(extension=extension, model_name=model_name, target_column=target_column)
+        yield messages_pb2.SendFile(fit_metadata=metadata)
+    while True:
+        chunk = uploaded_file.file.read(chunk_size)
+        if chunk:
+            entry_request = messages_pb2.SendFile(chunk_data=chunk)
+            yield entry_request
+        else:
+            return

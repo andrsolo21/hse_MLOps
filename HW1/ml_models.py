@@ -1,9 +1,10 @@
 from sklearn.linear_model import Ridge, Lasso
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 from api_models import ModelType
 import pickle as pkl
 import pandas as pd
+from io import BytesIO
 import os
 
 MODELS_PATH = "models_dir"
@@ -14,6 +15,39 @@ ML_MODELS = {
     ModelType.DTC: DecisionTreeClassifier,
     ModelType.DTR: DecisionTreeRegressor
 }
+
+
+def convert_uploaded_file(uploaded_file: UploadFile) -> pd.DataFrame:
+    """
+    Check and convert uploaded file
+    :param uploaded_file: uploaded_file
+    :return: uploaded dataset
+    :raise: HTTPException - "Invalid file type"
+    """
+    if uploaded_file.filename.split(".")[-1] == "xlsx" or uploaded_file.filename.split(".")[-1] == "xls":
+        data = pd.read_excel(uploaded_file.file)
+    elif uploaded_file.filename.split(".")[-1] == "csv":
+        print(type(uploaded_file.file))
+        data = pd.read_csv(uploaded_file.file)
+    else:
+        raise HTTPException(status_code=415, detail="Invalid file type")
+    return data
+
+
+def convert_byte_data(data: bytearray, extension: str) -> pd.DataFrame:
+    """
+
+    :param data:
+    :param extension:
+    :return:
+    """
+    if extension == "xlsx" or extension == "xls":
+        data = pd.read_excel(data)
+    elif extension == "csv":
+        data = pd.read_csv(BytesIO(data))
+    else:
+        raise HTTPException(status_code=415, detail="Invalid file type")
+    return data
 
 
 def get_ml_models_list() -> (list[str], dict[str, list[str]]):
@@ -144,7 +178,7 @@ class MLModel(object):
         """
         self.target_column = target_column
         if self.target_column not in df.columns:
-            raise HTTPException(status_code=400, detail="No 'target' column in data")
+            raise HTTPException(status_code=400, detail="No target column in data")
         if len(df.columns) == 1:
             raise HTTPException(status_code=400, detail="No train columns in data")
         self.train_columns = list(set(df.columns) - {self.target_column})
