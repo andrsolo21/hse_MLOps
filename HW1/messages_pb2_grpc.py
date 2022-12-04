@@ -9,7 +9,6 @@ class GreeterStub(object):
     """python -m grpc_tools.protoc -I./grpc --python_out=. --grpc_python_out=. ./grpc/messages.proto
 
     The greeting service definition.
-    The greeting service definition.
     """
 
     def __init__(self, channel):
@@ -58,7 +57,6 @@ class GreeterStub(object):
 class GreeterServicer(object):
     """python -m grpc_tools.protoc -I./grpc --python_out=. --grpc_python_out=. ./grpc/messages.proto
 
-    The greeting service definition.
     The greeting service definition.
     """
 
@@ -152,7 +150,6 @@ def add_GreeterServicer_to_server(servicer, server):
 class Greeter(object):
     """python -m grpc_tools.protoc -I./grpc --python_out=. --grpc_python_out=. ./grpc/messages.proto
 
-    The greeting service definition.
     The greeting service definition.
     """
 

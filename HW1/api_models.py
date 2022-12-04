@@ -8,7 +8,6 @@ class ONEClassParams(BaseModel):
     """
     alpha: float | None = 1
     fit_intercept: bool | None = None
-    normalize: bool | None = None
     max_iter: int | None = 100
     random_state: int | None = 42
     splitter: SplitterType | None = SplitterType.best
@@ -25,7 +24,6 @@ class RLParams(BaseModel):
     """
     alpha: float | None = 1
     fit_intercept: bool | None = None
-    normalize: bool | None = None
     max_iter: int | None = 100
     random_state: int | None = 42
 

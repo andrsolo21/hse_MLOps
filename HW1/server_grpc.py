@@ -1,16 +1,13 @@
-"""The Python implementation of the GRPC helloworld.Greeter server."""
 from fastapi import HTTPException
 from concurrent import futures
 import logging
 import json
-import pandas as pd
 
 import grpc
 import messages_pb2
 import messages_pb2_grpc
 
 from ml_models import ML_MODELS, get_ml_models_list, MLModel, convert_byte_data
-from api_models import *
 
 
 class Greeter(messages_pb2_grpc.GreeterServicer):
@@ -48,14 +45,14 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
         model_type = request.model_type
         model_params = json.loads(request.model_params)
         print("start patch")
-        model_params = reformat_model_params(model_params=ONEClassParams(**model_params),
-                                             model_type=model_type)
+        # model_params = reformat_model_params(model_params=ONEClassParams(**model_params),
+        #                                      model_type=model_type)
         print("stop patch")
         print(model_params)
         if model_params is None:
             params = {}
         else:
-            params = model_params.dict()
+            params = model_params
 
         ml_model = MLModel(type_model=model_type, params=params)
         model_path = ml_model.dump_model()
@@ -74,7 +71,8 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
         target_column = None
 
         for request in request_iterator:
-            if request.fit_metadata.extension and request.fit_metadata.model_name and request.fit_metadata.target_column:
+            if request.fit_metadata.extension and request.fit_metadata.model_name and \
+                    request.fit_metadata.target_column:
                 extension = request.fit_metadata.extension
                 model_name = request.fit_metadata.model_name
                 target_column = request.fit_metadata.target_column

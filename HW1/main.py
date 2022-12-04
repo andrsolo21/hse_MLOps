@@ -55,20 +55,11 @@ async def create_model(model_type: ModelType,
 
     with grpc.insecure_channel(GRPC_SERVER) as channel:
         stub = messages_pb2_grpc.GreeterStub(channel)
-        params = json.dumps(model_params.dict())
+        # params = json.dumps(model_params.dict())
+        params = json.dumps(reformat_model_params(model_params=ONEClassParams(**model_params.dict()),
+                                                  model_type=model_type).dict())
         response = stub.CreateModel(messages_pb2.CreateModelRequest_2(model_type=model_type, model_params=params))
     return CreateModelRespond(path=response.model_path, model_type=response.model_type)
-
-    # model_params = reformat_model_params(model_params, model_type)
-    # print(model_params)
-    # if model_params is None:
-    #     params = {}
-    # else:
-    #     params = model_params.dict()
-    #
-    # ml_model = MLModel(type_model=model_type, params=params)
-    # model_path = ml_model.dump_model()
-    # return CreateModelRespond(path=model_path, model_type=model_type)
 
 
 @app.post("/models/{model_name}/fit/",
@@ -122,11 +113,6 @@ async def get_predictions(model_name: str,
         else:
             raise HTTPException(status_code=response.error_code, detail=response.error_message)
 
-    # data = convert_uploaded_file(uploaded_file)
-    # ml_model = MLModel(model_name=model_name)
-    # result = ml_model.predict(data)
-    # return PredictModelRespond(predict=list(result))
-
 
 @app.get("/models/{model_name}/info/",
          response_model=GetInfoRespond,
@@ -144,9 +130,6 @@ async def get_model_info(model_name: str):
             return GetInfoRespond(**json.loads(response.model_params))
         else:
             raise HTTPException(status_code=response.error_code, detail=response.error_message)
-    # ml_model = MLModel(model_name=model_name)
-    # data = ml_model.get_info()
-    # return GetInfoRespond(**data)
 
 
 @app.delete("/models/{model_name}/delete/")
@@ -163,10 +146,6 @@ async def delete_model(model_name: str):
             return ModelsListRespond(models_list=list(response.ml_models_list))
         else:
             raise HTTPException(status_code=response.error_code, detail=response.error_message)
-    # ml_model = MLModel(model_name=model_name)
-    # ml_model.delete_model()
-    # models_list, _ = get_ml_models_list()
-    # return ModelsListRespond(models_list=list(models_list))
 
 
 def send_file_by_grpc(uploaded_file: UploadFile, model_name: str, target_column: str = None, chunk_size: int = 1024):
