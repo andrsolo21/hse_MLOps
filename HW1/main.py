@@ -12,7 +12,7 @@ app = FastAPI()
 # uvicorn main:app --reload
 # python server_grpc.py
 
-GRPC_SERVER = 'localhost:50051'
+GRPC_SERVER = '172.19.0.3:50051'
 
 
 @app.get("/available_model_types/", response_model=AvailableModelTypeRespond)
@@ -127,6 +127,12 @@ async def get_model_info(model_name: str):
         stub = messages_pb2_grpc.GreeterStub(channel)
         response = stub.GetModelInfo(messages_pb2.ModelName(model_name=model_name))
         if response.error_code == 0:
+            # model_info_resp = {}
+            # model_info = json.loads(response.model_params)
+            # for key in model_info:
+            #     if model_info[key] is not None:
+            #         model_info_resp[key] = model_info[key]
+
             return GetInfoRespond(**json.loads(response.model_params))
         else:
             raise HTTPException(status_code=response.error_code, detail=response.error_message)

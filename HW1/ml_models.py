@@ -16,6 +16,9 @@ ML_MODELS = {
     ModelType.DTR: DecisionTreeRegressor
 }
 
+if not os.path.exists(MODELS_PATH):
+    os.mkdir(MODELS_PATH)
+
 
 def convert_uploaded_file(uploaded_file: UploadFile) -> pd.DataFrame:
     """

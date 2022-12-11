@@ -135,6 +135,6 @@ class GetInfoRespond(BaseModel):
     model_name: str
     type_model: ModelType
     is_trained: bool
-    train_columns: list[str]
-    target_column: str
+    train_columns: list[str] | None
+    target_column: str | None
     # model_params: RLParams | DTCParams | DTRParams

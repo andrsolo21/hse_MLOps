@@ -1,4 +1,5 @@
 # our base image
+# docker build -f Dockerfile -t andrsolo21/grpc_server_code ..
 FROM python:3.10
 
 WORKDIR /grpc_code
@@ -18,6 +19,4 @@ COPY ../enum_models.py /grpc_code/enum_models.py
 EXPOSE 50051:50051
 
 # run the application
-#CMD ["uvicorn", "main:app", "--reload"]
-#CMD ["uvicorn", "main:app", "--reload"]
 CMD ["python", "server_grpc.py"]
