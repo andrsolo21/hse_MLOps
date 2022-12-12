@@ -2,12 +2,12 @@ from fastapi import HTTPException
 from concurrent import futures
 import logging
 import json
-
 import grpc
 import messages_pb2
 import messages_pb2_grpc
 
-from ml_models import ML_MODELS, get_ml_models_list, MLModel, convert_byte_data
+from ml_models import ML_MODELS, MLModel, convert_byte_data
+from work_with_database import DBModel
 
 
 class Greeter(messages_pb2_grpc.GreeterServicer):
@@ -19,7 +19,7 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
         :param context: context
         :return: AvailableModelTypes
         """
-        print("Send AvailableModelTypes")
+        logging.getLogger(__name__).log(level=2, msg="Send AvailableModelTypes")
         return messages_pb2.AvailableModelTypes(available_model_types=list(ML_MODELS.keys()))
 
     def GetMLModelsList(self, request, context):
@@ -29,9 +29,8 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
         :param context: context
         :return: MLModelsList
         """
-        print("Send MLModelsList")
-        models_list, _ = get_ml_models_list()
-        return messages_pb2.MLModelsList(ml_models_list=list(models_list))
+        logging.getLogger(__name__).log(level=3, msg="Send MLModelsList")
+        return messages_pb2.MLModelsList(ml_models_list=DBModel.get_models_list())
 
     def CreateModel(self, request, context):
         """
@@ -40,23 +39,19 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
         :param context: context
         :return: ResponseCreatedModel
         """
-        print("start create model")
-        models_list, _ = get_ml_models_list()
+
+        logging.getLogger(__name__).log(level=2, msg="Send CreateModel")
         model_type = request.model_type
         model_params = json.loads(request.model_params)
-        print("start patch")
-        # model_params = reformat_model_params(model_params=ONEClassParams(**model_params),
-        #                                      model_type=model_type)
-        print("stop patch")
-        print(model_params)
+
         if model_params is None:
             params = {}
         else:
             params = model_params
 
         ml_model = MLModel(type_model=model_type, params=params)
-        model_path = ml_model.dump_model()
-        return messages_pb2.ResponseCreatedModel(model_path=model_path, model_type=model_type)
+        ml_model.dump_model()
+        return messages_pb2.ResponseCreatedModel(model_name=ml_model.model_name)
 
     def FitModel(self, request_iterator, context):
         """
@@ -65,6 +60,7 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
         :param context: context
         :return: ResponseCreatedModel
         """
+        logging.getLogger(__name__).log(level=2, msg="Send FitModel")
         data = bytearray()
         extension = None
         model_name = None
@@ -78,6 +74,7 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
                 target_column = request.fit_metadata.target_column
                 continue
             data.extend(request.chunk_data)
+
 
         try:
             data = convert_byte_data(data, extension)
@@ -99,6 +96,7 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
         :param context: context
         :return: ResponsePredictData
         """
+        logging.getLogger(__name__).log(level=2, msg="Send PredictData")
         data = bytearray()
         extension = None
         model_name = None
@@ -130,7 +128,7 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
         :param context: context
         :return: MLModelsList
         """
-        print("Send GetModelInfo")
+        logging.getLogger(__name__).log(level=2, msg="Send GetModelInfo")
         try:
             ml_model = MLModel(model_name=request.model_name)
             data = ml_model.get_info()
@@ -149,11 +147,11 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
         :param context: context
         :return: MLModelsList
         """
-        print("Send GetModelInfo")
+        logging.getLogger(__name__).log(level=2, msg="Send DeleteModel")
         try:
             ml_model = MLModel(model_name=request.model_name)
             ml_model.delete_model()
-            models_list, _ = get_ml_models_list()
+            models_list = DBModel.get_models_list()
         except HTTPException as exc:
             return messages_pb2.MLModelsList(ml_models_list=None,
                                              error_code=exc.status_code,
@@ -168,15 +166,18 @@ def serve():
     Start grpc server
     :return: None
     """
+    DBModel.create_table_if_not_exists()
+
     port = '50051'
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     messages_pb2_grpc.add_GreeterServicer_to_server(Greeter(), server)
     server.add_insecure_port('[::]:' + port)
     server.start()
-    print("Server started, listening on " + port)
+    logging.getLogger(__name__).log(level=2, msg="Server started, listening on " + port)
     server.wait_for_termination()
 
 
 if __name__ == '__main__':
-    logging.basicConfig()
+    # logging.basicConfig()
+    # logging.getLogger(__name__).setLevel(logging.INFO)
     serve()

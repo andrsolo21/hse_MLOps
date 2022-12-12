@@ -1,13 +1,12 @@
+import numpy as np
 from sklearn.linear_model import Ridge, Lasso
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from fastapi import HTTPException, UploadFile
 from api_models import ModelType
-import pickle as pkl
 import pandas as pd
 from io import BytesIO
 import os
-
-MODELS_PATH = "models_dir"
+from work_with_database import DBModel
 
 ML_MODELS = {
     ModelType.R: Ridge,
@@ -16,8 +15,10 @@ ML_MODELS = {
     ModelType.DTR: DecisionTreeRegressor
 }
 
-if not os.path.exists(MODELS_PATH):
-    os.mkdir(MODELS_PATH)
+
+# MODELS_PATH = "models_dir"
+# if not os.path.exists(MODELS_PATH):
+#     os.mkdir(MODELS_PATH)
 
 
 def convert_uploaded_file(uploaded_file: UploadFile) -> pd.DataFrame:
@@ -53,25 +54,25 @@ def convert_byte_data(data: bytearray, extension: str) -> pd.DataFrame:
     return data
 
 
-def get_ml_models_list() -> (list[str], dict[str, list[str]]):
-    """
-    Get name of models from disk
-    :return:
-        models_list - list of existing models
-        models_dct - {type_model: [model_names]}
-    """
-    models = os.listdir(MODELS_PATH)
-    models_list = []
-    models_dct = {key: [] for key in ML_MODELS}
-    for model in models:
-        model_name = model.split(".")[0]
-        if len(model_name.split("_")) > 1:
-            model_type = model_name.split("_")[0]
-            model_id = model_name.split("_")[1]
-            if model_type in models_dct and model_id.isdigit():
-                models_dct[model_type].append(int(model_id))
-                models_list.append(model_name)
-    return models_list, models_dct
+# def get_ml_models_list() -> (list[str], dict[str, list[str]]):
+#     """
+#     Get name of models from BD
+#     :return:
+#         models_list - list of existing models
+#         models_dct - {type_model: [model_names]}
+#     """
+#     models = os.listdir(MODELS_PATH)
+#     models_list = []
+#     models_dct = {key: [] for key in ML_MODELS}
+#     for model in models:
+#         model_name = model.split(".")[0]
+#         if len(model_name.split("_")) > 1:
+#             model_type = model_name.split("_")[0]
+#             model_id = model_name.split("_")[1]
+#             if model_type in models_dct and model_id.isdigit():
+#                 models_dct[model_type].append(int(model_id))
+#                 models_list.append(model_name)
+#     return models_list, models_dct
 
 
 class MLModel(object):
@@ -120,34 +121,37 @@ class MLModel(object):
         elif model_name is not None:
             self._read_model()
 
-    def _create_model(self):
+    def _create_model(self) -> None:
         """
         Create model with type self.type_model with parameters self.params
         :return: None
         """
         self.model = ML_MODELS[self.type_model](**self.params)
-        _, models_dct = get_ml_models_list()
-        num_model = max(models_dct[self.type_model]) + 1 if len(models_dct[self.type_model]) > 0 else 0
+        models_list = DBModel.get_grouped_models_by_type(self.type_model)
+        ids = list(map(lambda x: int(x.split("_")[1]), models_list))
+        num_model = sorted(list(set(np.arange(max(ids + [0]) + 2)) - set(ids)))[0]
+        # num_model = max(ids) + 1 if len(ids) > 0 else 0
         self.model_name = f"{self.type_model}_{num_model}"
 
-    def path_to_model(self) -> str:
+    def check_exist_model(self) -> bool:
         """
         Generate path to current model
         :return: path to current model
         """
-        return os.path.join(MODELS_PATH, f'{self.model_name}.pkl')
+        return self.model_name in DBModel.get_models_list()
 
-    def _read_model(self):
+    def _read_model(self) -> None:
         """
         Read model from disk
         :return: None
         :raise:
             HTTPException - "The model with the given name is not exist"
         """
-        if not os.path.exists(self.path_to_model()):
+        if not self.check_exist_model():
             raise HTTPException(status_code=404, detail="The model with the given name is not exist")
-        with open(self.path_to_model(), 'rb') as file:
-            data_model = pkl.load(file)
+
+        data_model = DBModel.get_model(self.model_name)
+
         self.model = data_model["model"]
         self.is_trained = data_model["is_trained"]
         self.train_columns = data_model["train_columns"]
@@ -155,19 +159,19 @@ class MLModel(object):
         self.target_column = data_model["target_column"]
         self.type_model = self.model_name.split("_")[0]
 
-    def dump_model(self) -> str:
+    def dump_model(self) -> None:
         """
         Dump model to the disk
         :return: path to dumped model
         """
-        with open(self.path_to_model(), 'wb') as file:
-            pkl.dump({"model": self.model,
+        model_data = {"model": self.model,
                       "is_trained": self.is_trained,
                       "train_columns": self.train_columns,
                       "params": self.params,
                       "target_column": self.target_column,
-                      }, file)
-        return os.path.join(MODELS_PATH, f'{self.model_name}.pkl')
+                      }
+        DBModel.dump_model(model_name=self.model_name, model_data=model_data)
+        # return os.path.join(MODELS_PATH, f'{self.model_name}.pkl')
 
     def fit(self, df: pd.DataFrame, target_column: str = "target"):
         """
@@ -214,7 +218,6 @@ class MLModel(object):
             "is_trained": self.is_trained,
             "train_columns": self.train_columns,
             "target_column": self.target_column,
-            # "model_params": self.params,
         }
 
     def delete_model(self):
@@ -222,4 +225,4 @@ class MLModel(object):
         Delete current model from disk
         :return: None
         """
-        os.remove(self.path_to_model())
+        DBModel.delete_model(model_name=self.model_name)

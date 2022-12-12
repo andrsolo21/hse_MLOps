@@ -109,7 +109,7 @@ class CreateModelRespond(BaseModel):
     """
     Respond for create_model request
     """
-    path: str = ""
+    model_name: str = ""
     model_type: ModelType | None = None
     # model_params: ONEClassParams
 

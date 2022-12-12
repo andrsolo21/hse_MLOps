@@ -12,7 +12,7 @@ app = FastAPI()
 # uvicorn main:app --reload
 # python server_grpc.py
 
-GRPC_SERVER = '172.19.0.3:50051'
+GRPC_SERVER = 'host_grpc_server:50051'
 
 
 @app.get("/available_model_types/", response_model=AvailableModelTypeRespond)
@@ -58,8 +58,10 @@ async def create_model(model_type: ModelType,
         # params = json.dumps(model_params.dict())
         params = json.dumps(reformat_model_params(model_params=ONEClassParams(**model_params.dict()),
                                                   model_type=model_type).dict())
+        # print(f"model type: {model_type}")
+        # print(f"params: {params}")
         response = stub.CreateModel(messages_pb2.CreateModelRequest_2(model_type=model_type, model_params=params))
-    return CreateModelRespond(path=response.model_path, model_type=response.model_type)
+    return CreateModelRespond(model_name=response.model_name, model_type=model_type)
 
 
 @app.post("/models/{model_name}/fit/",

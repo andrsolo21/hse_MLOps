@@ -14,6 +14,7 @@ COPY ../server_grpc.py /grpc_code/server_grpc.py
 COPY ../ml_models.py /grpc_code/ml_models.py
 COPY ../api_models.py /grpc_code/api_models.py
 COPY ../enum_models.py /grpc_code/enum_models.py
+COPY ../work_with_database.py /grpc_code/work_with_database.py
 
 # specify the port number the container should expose
 EXPOSE 50051:50051

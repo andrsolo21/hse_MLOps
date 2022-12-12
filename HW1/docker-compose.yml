@@ -6,38 +6,43 @@ version: "3"
 services:
 
   fast_api:
-
     image: andrsolo21/fast_code
-
     command: uvicorn main:app --host 0.0.0.0 --port 8000
-
     ports:
       - "8000:8000"
-
     depends_on:
       - grpc_server
+    networks:
+      - front_network
 
 
   grpc_server:
-
     image: andrsolo21/grpc_server_code
-
     command: python server_grpc.py
-
     ports:
       - "50051:50051"
-
     depends_on:
       - postgres
+    networks:
+      - front_network
+      - back_network
+    hostname: host_grpc_server
 
   postgres:
     image: postgres:13.3
     environment:
       POSTGRES_DB: "ml_models"
       POSTGRES_USER: "ml_user"
-      POSTGRES_PASSWORD: "difficult_password"
+      POSTGRES_PASSWORD: "password"
     volumes:
       - .:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+    networks:
+      - back_network
+    hostname: host_postgres
+
+networks:
+  front_network:
+  back_network:
 
