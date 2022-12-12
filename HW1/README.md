@@ -1,5 +1,7 @@
 # hse_MLOps
 
+For local execution:
+
 1. Start venv
 2. Create grpc files `python -m grpc_tools.protoc -I./grpc --python_out=. --grpc_python_out=. ./grpc/messages.proto`
 3. Start REST API server: `uvicorn main:app --reload`

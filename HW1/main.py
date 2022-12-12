@@ -1,7 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from api_models import *
 import json
-
 import grpc
 import messages_pb2
 import messages_pb2_grpc
@@ -16,9 +15,9 @@ GRPC_SERVER = 'host_grpc_server:50051'
 
 
 @app.get("/available_model_types/", response_model=AvailableModelTypeRespond)
-async def get_available_model_types():
+async def get_available_model_types() -> object:
     """
-    Get available model types
+    Return list of available model types
     :return: AvailableModelTypeRespond
     """
     with grpc.insecure_channel(GRPC_SERVER) as channel:
@@ -28,9 +27,9 @@ async def get_available_model_types():
 
 
 @app.get("/models_list/", response_model=ModelsListRespond)
-async def get_models_list():
+async def get_models_list() -> object:
     """
-    Get list of created models
+    Return list of created models
     :return: ModelsListRespond
     """
     with grpc.insecure_channel(GRPC_SERVER) as channel:
@@ -45,7 +44,7 @@ async def get_models_list():
 async def create_model(model_type: ModelType,
                        model_params: ONEClassParams | None = None
                        # model_params: RLParams | DTCParams | DTRParams | None = None # fastAPI not supported(
-                       ):
+                       ) -> object:
     """
     Create model with given parameters
     :param model_type: type of crated model
@@ -70,7 +69,7 @@ async def create_model(model_type: ModelType,
 async def fit_model(model_name: str,
                     target_column: str = "target",
                     uploaded_file: UploadFile = File(description="A file read as UploadFile")
-                    ):
+                    ) -> object:
     """
     Fit or reFit model with given dataset
     :param model_name: Identifying model name
@@ -98,7 +97,7 @@ async def fit_model(model_name: str,
                      418: {"model": RespondError}})
 async def get_predictions(model_name: str,
                           uploaded_file: UploadFile = File(description="A file read as UploadFile")
-                          ):
+                          ) -> object:
     """
     Predict data for given dataset
     :param model_name: Identifying model name
@@ -119,7 +118,7 @@ async def get_predictions(model_name: str,
 @app.get("/models/{model_name}/info/",
          response_model=GetInfoRespond,
          responses={404: {"model": RespondError}})
-async def get_model_info(model_name: str):
+async def get_model_info(model_name: str) -> object:
     """
     Get basic info about model
     :param model_name: Identifying model name
@@ -141,7 +140,7 @@ async def get_model_info(model_name: str):
 
 
 @app.delete("/models/{model_name}/delete/")
-async def delete_model(model_name: str):
+async def delete_model(model_name: str) -> object:
     """
     Deleting model with the given model name
     :param model_name: Identifying model name
@@ -156,7 +155,10 @@ async def delete_model(model_name: str):
             raise HTTPException(status_code=response.error_code, detail=response.error_message)
 
 
-def send_file_by_grpc(uploaded_file: UploadFile, model_name: str, target_column: str = None, chunk_size: int = 1024):
+def send_file_by_grpc(uploaded_file: UploadFile,
+                      model_name: str,
+                      target_column: str = None,
+                      chunk_size: int = 1024) -> object:
     """
     Streaming file by grpc
     :param uploaded_file: uploaded file for streaming

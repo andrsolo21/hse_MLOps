@@ -5,8 +5,8 @@ class ModelType(str, Enum):
     """
     Names of existing models
     """
-    R = "Lasso"
-    L = "Ridge"
+    L = "Lasso"
+    R = "Ridge"
     DTC = "DecisionTreeClassifier"
     DTR = "DecisionTreeRegressor"
 

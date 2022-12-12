@@ -12,7 +12,7 @@ from work_with_database import DBModel
 
 class Greeter(messages_pb2_grpc.GreeterServicer):
 
-    def GetAvailableModelTypes(self, request, context):
+    def GetAvailableModelTypes(self, request, context) -> object:
         """
         GetAvailableModelTypes
         :param request: request
@@ -22,7 +22,7 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
         logging.getLogger(__name__).log(level=2, msg="Send AvailableModelTypes")
         return messages_pb2.AvailableModelTypes(available_model_types=list(ML_MODELS.keys()))
 
-    def GetMLModelsList(self, request, context):
+    def GetMLModelsList(self, request, context) -> object:
         """
         GetMLModelsList
         :param request: request
@@ -32,7 +32,7 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
         logging.getLogger(__name__).log(level=3, msg="Send MLModelsList")
         return messages_pb2.MLModelsList(ml_models_list=DBModel.get_models_list())
 
-    def CreateModel(self, request, context):
+    def CreateModel(self, request, context) -> object:
         """
         CreateModel
         :param request: request
@@ -53,12 +53,12 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
         ml_model.dump_model()
         return messages_pb2.ResponseCreatedModel(model_name=ml_model.model_name)
 
-    def FitModel(self, request_iterator, context):
+    def FitModel(self, request_iterator, context) -> object:
         """
         FitModel
         :param request_iterator: iterator for data from request
         :param context: context
-        :return: ResponseCreatedModel
+        :return: ResponseFitModel
         """
         logging.getLogger(__name__).log(level=2, msg="Send FitModel")
         data = bytearray()
@@ -75,7 +75,6 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
                 continue
             data.extend(request.chunk_data)
 
-
         try:
             data = convert_byte_data(data, extension)
             ml_model = MLModel(model_name=model_name)
@@ -89,7 +88,7 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
                                              error_code=0,
                                              error_message=None)
 
-    def PredictData(self, request_iterator, context):
+    def PredictData(self, request_iterator, context) -> object:
         """
         PredictData
         :param request_iterator: iterator for data from request
@@ -121,12 +120,12 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
                                                 error_code=0,
                                                 error_message=None)
 
-    def GetModelInfo(self, request, context):
+    def GetModelInfo(self, request, context) -> object:
         """
         GetModelInfo
         :param request: request
         :param context: context
-        :return: MLModelsList
+        :return: ResponseModelInfo
         """
         logging.getLogger(__name__).log(level=2, msg="Send GetModelInfo")
         try:
@@ -140,7 +139,7 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
                                               error_code=0,
                                               error_message=None)
 
-    def DeleteModel(self, request, context):
+    def DeleteModel(self, request, context) -> object:
         """
         DeleteModel
         :param request: request
@@ -161,7 +160,7 @@ class Greeter(messages_pb2_grpc.GreeterServicer):
                                          error_message=None)
 
 
-def serve():
+def serve() -> None:
     """
     Start grpc server
     :return: None
