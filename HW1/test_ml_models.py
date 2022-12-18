@@ -13,7 +13,7 @@ class TestModels(unittest.TestCase):
         DBModel.CONN_PARAMS = None
         self.model = MLModel(type_model=ModelType.L, params={})
         self.fitted_model = MLModel(type_model=ModelType.L, params={})
-        self.df = pd.read_csv(os.path.join("data_examples", "regression_100s_10f.csv"))
+        self.df = pd.read_csv(os.path.join("HW1", "data_examples", "regression_100s_10f.csv"))
         self.fitted_model.fit(self.df)
 
     def test_creating_models(self):
