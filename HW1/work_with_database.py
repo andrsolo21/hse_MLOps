@@ -2,14 +2,13 @@ import psycopg2
 import pandas as pd
 import pickle as pkl
 
-CONN_PARAMS = {"dbname": 'ml_models',
-               "user": 'ml_user',
-               "password": 'password',
-               "host": 'host_postgres',
-               "port": 5432}
-
 
 class DBModel(object):
+    CONN_PARAMS = {"dbname": 'ml_models',
+                   "user": 'ml_user',
+                   "password": 'password',
+                   "host": 'host_postgres',
+                   "port": 5432}
 
     @staticmethod
     def create_table_if_not_exists() -> None:
@@ -17,7 +16,7 @@ class DBModel(object):
         Create table in DataBase if it not exists
         :return: None
         """
-        conn = psycopg2.connect(**CONN_PARAMS)
+        conn = psycopg2.connect(**DBModel.CONN_PARAMS)
         with conn:
             with conn.cursor() as cur:
                 cur.execute("""CREATE TABLE IF NOT EXISTS MODELS
@@ -34,7 +33,7 @@ class DBModel(object):
         Get name of models from DataBase
         :return: list of models names
         """
-        conn = psycopg2.connect(**CONN_PARAMS)
+        conn = psycopg2.connect(**DBModel.CONN_PARAMS)
         with conn:
             with conn.cursor() as cur:
                 cur.execute("""SELECT MODELNAME FROM MODELS WHERE MODELS.ISDELETED = FALSE;""")
@@ -48,7 +47,9 @@ class DBModel(object):
         :param type_model: type of models
         :return: list of models names
         """
-        conn = psycopg2.connect(**CONN_PARAMS)
+        if DBModel.CONN_PARAMS is None:
+            return ["MokedModel_42"]
+        conn = psycopg2.connect(**DBModel.CONN_PARAMS)
         with conn:
             with conn.cursor() as cur:
                 cur.execute(f"""SELECT MODELNAME FROM MODELS WHERE MODELS.ISDELETED = 
@@ -63,7 +64,7 @@ class DBModel(object):
         :param model_name: model name
         :return: data fot creating model
         """
-        conn = psycopg2.connect(**CONN_PARAMS)
+        conn = psycopg2.connect(**DBModel.CONN_PARAMS)
         with conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -80,7 +81,7 @@ class DBModel(object):
         :return: None
         """
         models_list = DBModel.get_models_list()
-        conn = psycopg2.connect(**CONN_PARAMS)
+        conn = psycopg2.connect(**DBModel.CONN_PARAMS)
         with conn:
             with conn.cursor() as cur:
                 if model_name in models_list:
@@ -106,7 +107,7 @@ class DBModel(object):
         :param model_name: model name
         :return: None
         """
-        conn = psycopg2.connect(**CONN_PARAMS)
+        conn = psycopg2.connect(**DBModel.CONN_PARAMS)
         with conn:
             with conn.cursor() as cur:
                 cur.execute(f"""UPDATE MODELS
