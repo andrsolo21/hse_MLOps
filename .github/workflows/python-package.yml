@@ -37,6 +37,6 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=256 --statistics
     - name: Test with unittests
       run: |
-        python test_ml_models.py -v
+        python HW1/test_ml_models.py -v
         # pytest
         
