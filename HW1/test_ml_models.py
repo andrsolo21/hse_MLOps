@@ -9,27 +9,47 @@ from sklearn.metrics import mean_absolute_error as mae
 
 class TestModels(unittest.TestCase):
 
-    def setUp(self):
+    def setUp(self) -> None:
+        """
+        setup parameters for tests
+        :return:  None
+        """
         DBModel.CONN_PARAMS = None
         self.model = MLModel(type_model=ModelType.L, params={})
         self.fitted_model = MLModel(type_model=ModelType.L, params={})
         self.df = pd.read_csv(os.path.join("HW1", "data_examples", "regression_100s_10f.csv"))
         self.fitted_model.fit(self.df)
 
-    def test_creating_models(self):
+    def test_creating_models(self) -> None:
+        """
+        Check model type
+        :return:  None
+        """
         self.assertEqual(MLModel(type_model=ModelType.L, params={}).type_model, "Lasso")
         self.assertEqual(MLModel(type_model=ModelType.R, params={}).type_model, "Ridge")
         self.assertEqual(MLModel(type_model=ModelType.DTC, params={}).type_model, "DecisionTreeClassifier")
         self.assertEqual(MLModel(type_model=ModelType.DTR, params={}).type_model, "DecisionTreeRegressor")
 
-    def test_name_model(self):
+    def test_name_model(self) -> None:
+        """
+        Check model name
+        :return:  None
+        """
         self.assertEqual(self.model.model_name, "Lasso_0")
 
-    def test_for_fitted(self):
+    def test_for_fitted(self) -> None:
+        """
+        Check trained flag
+        :return: None
+        """
         self.assertEqual(self.model.is_trained, False)
         self.assertEqual(self.fitted_model.is_trained, True)
 
-    def test_for_predict(self):
+    def test_for_predict(self) -> None:
+        """
+        Check error on predicted data
+        :return:  None
+        """
         self.df["predict"] = self.fitted_model.predict(self.df)
         self.assertEqual(mae(self.df["target"], self.df["predict"]) < 5, True)
 

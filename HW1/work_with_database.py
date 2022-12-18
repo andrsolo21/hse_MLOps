@@ -48,7 +48,7 @@ class DBModel(object):
         :return: list of models names
         """
         if DBModel.CONN_PARAMS is None:
-            return ["MokedModel_42"]
+            return ["FakeModel_42"]
         conn = psycopg2.connect(**DBModel.CONN_PARAMS)
         with conn:
             with conn.cursor() as cur:
