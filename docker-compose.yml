@@ -4,7 +4,7 @@ services:
 
   fast_api:
     image: andrsolo21/fast_code
-    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    command: uvicorn fast_api_app:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
     depends_on:
