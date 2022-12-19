@@ -128,15 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-
-HW1/models_dir/
-HW1/client_grpc.py
-HW1/messages_pb2.py
-HW1/messages_pb2_grpc.py
-HW1/sql_scripts.sql
-
 ./client_grpc.py
 ./messages_pb2.py
 ./messages_pb2_grpc.py
 ./sql_scripts.sql
 ./models_dir
+sql_scripts.sql
