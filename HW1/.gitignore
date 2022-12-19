@@ -1,5 +1,0 @@
-./client_grpc.py
-./messages_pb2.py
-./messages_pb2_grpc.py
-./sql_scripts.sql
-./models_dir
